@@ -5,6 +5,7 @@
 		<link rel="stylesheet" href="./css/main.css">
 		<script type="text/javascript" src="./js/util.js"></script>
 		<script type="text/javascript" src="./js/gl-matrix.js"></script>
+		<script type="text/javascript" src="./js/vision.js"></script>
 		<script type="text/javascript" src="./js/tendril.js"></script>
 		<script type="text/javascript" src="./js/bandi.js"></script>
 		<script type="text/javascript" src="./js/main.js"></script>
@@ -70,15 +71,19 @@
 			precision mediump float;
 			
 			uniform sampler2D map;
+			uniform float opacity;
 			varying vec2 uv;
 
 			void main() {
 				vec4 c = texture2D(map, uv);
-				gl_FragColor = vec4(c.rgb * vec3(0.5, 1, 1), c.a);
+				gl_FragColor = vec4(c.rgb * vec3(0.5, 1, 1), c.a * opacity);
 			}
 		</script>
 	</head>
 	<body>
 		<canvas id="c" width="400" height="400"></canvas>
+		<div id="vision">
+			<video id="capture" autoplay="true"></video>
+		</div>
 	</body>
 </html>

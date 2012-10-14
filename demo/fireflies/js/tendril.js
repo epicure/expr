@@ -127,6 +127,9 @@ Tendril.prototype = {
 		if(dx < 50) {
 			this.to_amplitude = random(1, 2) * Math.PI * 0.05;
 			this.to_hsb[0] = (Math.sin(this.frameCount * 0.01) + 1) * 0.5;
+			if(random(0, 1) < 0.5) this.to_hsb[1] = random(0.9, 1);
+			if(random(0, 1) < 0.5) this.to_hsb[2] = random(0.6, 1);
+
 			var i;
 			while(this.bandiList.length > 0) {
 				var b = this.bandiList.shift();
@@ -144,9 +147,9 @@ Tendril.prototype = {
 
     	this.rot = Math.sin(this.frameCount * 0.01) * this.amplitude;
 
-    	this.hsb[0] += (this.to_hsb[0] - this.hsb[0]) * 0.1;
-        this.hsb[1] += (this.to_hsb[1] - this.hsb[1]) * 0.1;
-        this.hsb[2] += (this.to_hsb[2] - this.hsb[2]) * 0.1;
+    	this.hsb[0] += (this.to_hsb[0] - this.hsb[0]) * 0.01;
+        this.hsb[1] += (this.to_hsb[1] - this.hsb[1]) * 0.02;
+        this.hsb[2] += (this.to_hsb[2] - this.hsb[2]) * 0.03;
 
     	mat4.identity(this.transform);
     	mat4.translate(this.transform, this.pos);

@@ -9,6 +9,14 @@ var vb_quad, tb_quad;
 
 var readyStatus = 0;
 
+var guide = document.createElement('canvas').getContext('2d');
+var guide_data = null;
+var guide_pts = [];
+var guide_imgs = [];
+var guide_index = 0;
+
+var frameCount = 0;
+
 var initgl = function(gl) {
 	var vs_str = document.querySelector('#vs_tendril').textContent;
 	var fs_str = document.querySelector('#fs_tendril').textContent;
@@ -24,7 +32,7 @@ var initgl = function(gl) {
 	ef_bandi = new Effect(gl);
 	ef_bandi.compile(vs_str, fs_str);
 	ef_bandi.getAttribLocation('position', 'texCoord');
-	ef_bandi.getUniformLocation('proj', 'view', 'model', 'map', 'fpsr', 'pos');
+	ef_bandi.getUniformLocation('proj', 'view', 'model', 'map', 'fpsr', 'pos', 'opacity');
 
 	var vertices = new Float32Array([
 		-1, 1,
@@ -48,7 +56,6 @@ var initgl = function(gl) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, tb_quad);
 	gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
 
-	//proj = mat4.perspective(60, c.width / c.height, 0.01, 100);
 	m_view = mat4.lookAt([0,0,10], [0,0,0], [0, 1, 0]);
 	m_proj = mat4.ortho(0, c.width, c.height, 0, 0.01, 100);
 
@@ -87,7 +94,7 @@ var do_once = function() {
 	}
 
 	var b;
-	for(j = 0; j < 200; j++) {
+	for(j = 0; j < 500; j++) {
 		b = new Bandi(gl);
 		var theta = random(0, Math.PI * 2);
 		b.pos[0] = c.width * 0.5 + c.height * 0.25 * Math.cos(theta);
@@ -96,6 +103,73 @@ var do_once = function() {
 		b.impact();
 	
 		bandis.push(b);
+	}
+};
+
+var fill_guide = function() {
+	guide_pts = [];
+	guide_data = guide.getImageData(0, 0, guide.canvas.width, guide.canvas.height);
+	var i, x, y, pos;
+	for(y = 0; y < guide_data.height; y++) {
+		for(x = 0; x < guide_data.width; x++) {
+			i = y * guide_data.width + x;
+			pos = 4 * i;
+			if(guide_data.data[pos] > 0) {
+				guide_pts.push( { x: x, y: y });
+			}
+		}
+	}
+};
+
+var init_guide = function() {
+	guide.canvas.id = "guide";
+	guide.canvas.height = 200;
+	guide.canvas.width = Math.floor(c.width / c.height * guide.canvas.height);
+
+	var str = 'f i r e f l y';
+	guide.font = '40px serif';
+	guide.textAlign = 'center';
+	guide.textBaseline = 'middle';
+	guide.fillStyle = 'white';
+	guide.fillText(str, guide.canvas.width * 0.5, guide.canvas.height * 0.5);
+
+	fill_guide();
+
+	for(i = 1; i <= 7; i++) {
+		var img = document.createElement('img');
+		img.src = './img/c' + i + '.png';
+		guide_imgs.push(img);
+	}
+};
+
+var select_guide = function(n) {
+	var img = guide_imgs[n];
+
+	guide.fillStyle = 'black';
+	guide.fillRect(0, 0, guide.canvas.width, guide.canvas.height);
+	guide.drawImage(img, guide.canvas.width * 0.5 - img.width * 0.5, 0);
+
+	fill_guide();
+};
+
+var fire = function() {
+	var n;
+	for(i = 0; i < bandis.length; i++) {
+		b = bandis[i];
+		b.bTendril = null;
+		n = randomi(0, guide_pts.length - 1);
+
+		b.free = false;
+		b.tp[0] = guide_pts[n].x / guide_data.width * window.innerWidth;
+		b.tp[1] = guide_pts[n].y / guide_data.height * window.innerHeight;
+		b.energy = 600;
+		b.dt = 0.01;
+		b.to_opacity = 0.5;
+	}
+
+	if(frameCount > 300) {
+		var n = randomi(0, guide_imgs.length - 1);
+		select_guide(n);
 	}
 };
 
@@ -111,6 +185,10 @@ var init = function() {
 		tex_bandi = createTexture(gl, img_bandi);
 		readyStatus = 1;
 	};
+
+	init_guide();
+
+	vl.load(document.querySelector('#capture'));
 };
 
 var update = function() {
@@ -125,6 +203,8 @@ var update = function() {
 		b = bandis[i];
 		b.update();
 	}
+
+	frameCount++;
 };
 
 var draw = function() {
@@ -169,8 +249,9 @@ var loop = function() {
 		readyStatus = 2;
 	}
 	if(readyStatus == 2) {
+		vl.update();
 		update();
-		draw();	
+		draw();
 	}
 	webkitRequestAnimationFrame(loop);
 };
@@ -188,4 +269,41 @@ window.onmousemove = function(e) {
 			t.impact(e.clientX);
 		}			
 	}
+};
+
+window.onkeydown = function(e) {
+	if(e.keyCode == 32) {
+		select_guide(6);
+	}
+	switch(e.keyCode) {
+		case 49: // D1
+			select_guide(0);
+			fire();
+			break;
+		case 50: // D2
+			select_guide(1);
+			fire();
+			break;
+		case 51: // D3
+			select_guide(2);
+			fire();
+			break;
+		case 52: // D4
+			select_guide(3);
+			fire();
+			break;
+		case 53: // D5
+			select_guide(4);
+			fire();
+			break;
+		case 54: // D6
+			select_guide(5);
+			fire();
+			break;
+		case 55: // D7
+			select_guide(6);
+			fire();
+			break;
+	}
+	console.log(e.keyCode);
 };

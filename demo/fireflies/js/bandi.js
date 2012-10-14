@@ -35,6 +35,12 @@ Bandi.prototype = {
 		this.flx = 0;
 		this.fly = 0;
 		this.fle = 0;
+		
+		this.opacity = 1;
+		this.to_opacity = 1;
+		this.dt = 0.1;
+
+		this.free = true;
 	},
 	update: function() {
 		if(this.bTendril) {
@@ -53,16 +59,38 @@ Bandi.prototype = {
 				}
 				this.fluct--;
 			}
+
+			if(this.vd < 5) {
+				if(random(0, 1) < 0.01) {
+					this.dt = 0.002;
+					this.to_opacity = 0;
+				}
+			}
 		}
 		else {
-			this.ax += (this.to_ax - this.ax) * 0.01;
-			this.ay += (this.to_ay - this.ay) * 0.01;
-			this.vx += this.ax * 0.1;
-			this.vy += this.ay * 0.1;
+			if(this.free) {
+				this.ax += (this.to_ax - this.ax) * 0.01;
+				this.ay += (this.to_ay - this.ay) * 0.01;
+				this.vx += this.ax * 0.1;
+				this.vy += this.ay * 0.1;
 
-			if(this.frameCount % this.period == 0) {
-				this.to_ax = random(-1, 1) * 100;
-				this.to_ay = random(-1, 1) * 100;
+				if(this.frameCount % this.period == 0) {
+					this.to_ax = random(-1, 1) * 100;
+					this.to_ay = random(-1, 1) * 100;
+				}	
+			}
+			else {
+				this.ax += (this.tp[0] - this.pos[0]) * 0.1;
+				this.ay += (this.tp[1] - this.pos[1]) * 0.1;
+				this.vx += this.ax * 0.1;
+				this.vy += this.ay * 0.1;
+				this.ax *= 0.75;
+				this.ay *= 0.75;
+
+				if(random(0, 1) < 0.01) {
+					this.ax = random(-1, 1) * 50;
+					this.ay = random(-1, 1) * 50;
+				}
 			}
 		}
 
@@ -71,6 +99,7 @@ Bandi.prototype = {
 			this.vx = this.vx / this.vd * this.maxv;
 			this.vy = this.vy / this.vd * this.maxv;
 		}
+		this.opacity += (this.to_opacity - this.opacity) * this.dt;
 		this.pos[0] += this.vx * 0.1;
 		this.pos[1] += this.vy * 0.1;
 		this.vx *= this.decay;
@@ -81,6 +110,10 @@ Bandi.prototype = {
 			if(this.energy == 0) {
 				this.bindToRandomTendril();
 				this.fluct = 200;
+				if(!this.free) {
+					this.impact();
+					this.free = true;
+				}
 			}
 		}
 
@@ -88,6 +121,7 @@ Bandi.prototype = {
 	},
 	draw: function(gl, effect) {
 		gl.uniform2f(effect.u.pos, this.pos[0], this.pos[1]);
+		gl.uniform1f(effect.u.opacity, this.opacity);
 
 		gl.uniform4f(effect.u.fpsr, this.frameCount, this.phase1, this.speed1, 5);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -103,6 +137,8 @@ Bandi.prototype = {
 	impact: function() {
 		this.bTendril = null;
 		this.energy = randomi(200, 300);
+		this.dt = 0.1;
+		this.to_opacity = 1;
 		if(random(0, 1) < 0.1) {
 			this.energy = randomi(500, 1000);	
 		}
